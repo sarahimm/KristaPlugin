@@ -75,7 +75,8 @@ function appform(){
         //Check if form has been posted
         if ( empty( $_POST)){
             //If not, display form
-            $formhtml = "<form action='' method='POST' id='kcp_app_form'>"
+            $formhtml = "<script src='https://www.google.com/recaptcha/api.js' async defer></script>
+            <form action='' method='POST' id='kcp_app_form'>"
                 .wp_nonce_field( 'kcp_grant_app', 'verify' ).
                 "<h2>Global Service Grant Application</h2>
                 <label for='name'>Full Name</label>
@@ -119,6 +120,7 @@ function appform(){
                     <label for='challenge'><h3>Post-graduate service often presents many new challenges. Describe a challenge you've experienced and what steps you took to meet this challenge. (Please answer in 500 - 800 characters)</h3></label>
                     <textarea id='challenge' name='kcp_challenge' rows='6' cols='75' minlength=500 maxlength=800 required></textarea>
                 </div>
+                <div class='g-recaptcha' data-sitekey='6Ld1wnweAAAAADmFQzSCY2S4dkCVJ1RuvCFdoJFh'></div>
                 <input type='submit' value='submit'>
             </form>";
             return $formhtml;
@@ -151,6 +153,7 @@ function appform(){
                 return "Error. Please try again or contact the site administrator.";
             }
             //Add custom fields
+            add_post_meta($postid, "University", $univ);
             add_post_meta($postid, "Email", $email);
             add_post_meta($postid, "Phone", $phone);
             add_post_meta($postid, "Address", $address);
@@ -162,17 +165,6 @@ function appform(){
             add_post_meta($postid, "Experience", $experience);
             add_post_meta($postid, "Challenge", $challenge);
 
-            wp_set_object_terms($postid, $univ, 'University');
-
-            //Email notification to site admin
-            /*
-            mail(get_bloginfo('admin_email'), 'New Grant Application',$name." has just submitted an application 
-            for the Krista Colleagues Global Service Grant Program. View it at ".get_post_permalink($postid),"From: ".get_bloginfo('admin_email'));
-            return "Your application has been submitted. Thank you!";
-            */
-            //Testing
-            mail('sarahim@live.com', 'New Grant Application',$name." has just submitted an application 
-            for the Krista Colleagues Global Service Grant Program. View it at ".get_post_permalink($postid),"From: ".get_bloginfo('admin_email'));
             return "Your application has been submitted. Thank you!";
         }
 }
