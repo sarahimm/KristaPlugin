@@ -179,10 +179,6 @@ function appform(){
 
                 return "Your application has been submitted. Thank you!";
             } 
-            else {
-                //reCAPTCHA or nonce failed
-                    echo 'Submission could not be verified. Please try again.';
-            }  
         }
 }
 
@@ -191,7 +187,8 @@ function service_opps_form(){
         //Check if form has been posted
         if ( empty( $_POST)){
             //If not, display form
-            $formhtml = "<form action='' method='POST' id='kcp_opps_form'>"
+            $formhtml = "<script src='https://www.google.com/recaptcha/api.js' async defer></script>
+            <form action='' method='POST' id='kcp_opps_form'>"
                 .wp_nonce_field( 'kcp_add_serv_opp', 'verify' ).
                 "<h2>Add a Service Opportunity Listing</h2>
                 <label for='opp_name'><h3>Program Name</h3></label>
@@ -202,32 +199,46 @@ function service_opps_form(){
                     <textarea id='opp_desc' name='kcp_opp_desc' rows='6' cols='75'></textarea>
                 <label for='opp_deadline'><h3>Program Application Deadline</h3></label>
                     <input type='text' id='opp_deadline' name='kcp_opp_deadline' required>
+                    <div class='g-recaptcha' data-sitekey='6Ld1wnweAAAAADmFQzSCY2S4dkCVJ1RuvCFdoJFh'></div>
                     <input type='submit' value='submit'>
             </form>";
             return $formhtml;
         }else{ //Form has been submitted
-            //Check nonce to protect against CSRF
-            if ( ! wp_verify_nonce( $_POST['verify'], 'kcp_add_serv_opp' ) ) {
-                return "Submission could not be verified. Please try again.";
+            //reCAPTCHA verification adapted from https://codeforgeek.com/google-recaptcha-tutorial/
+            if(isset($_POST['g-recaptcha-response'])){
+                 $captcha=$_POST['g-recaptcha-response'];
             }
-            //Sanitize entries
-            $opp_name = sanitize_text_field($_POST["kcp_opp_name"]);
-            $opp_url = sanitize_url($_POST["kcp_opp_url"]);
-            $opp_desc = sanitize_textarea_field($_POST["kcp_opp_desc"]);
-            $opp_deadline = sanitize_text_field($_POST["kcp_opp_deadline"]);
+            if(!$captcha){
+                      echo 'Complete the reCAPTCHA and try again.';
+            }
+            $secretKey = "6Ld1wnweAAAAABSn8ObK091P32qcNeXBMJV3myAz";
+            $ip = $_SERVER['REMOTE_ADDR'];
+            // post request to server
+            $url = 'https://www.google.com/recaptcha/api/siteverify?secret=' . urlencode($secretKey) .  '&response=' . urlencode($captcha);
+            $response = file_get_contents($url);
+            $responseKeys = json_decode($response,true);
+            // should return JSON with success as true
+            //If reCAPTCHA and nonce tests are both successful
+            if($responseKeys["success"] && wp_verify_nonce( $_POST['verify'], 'kcp_grant_app' )){
+                //Sanitize entries
+                $opp_name = sanitize_text_field($_POST["kcp_opp_name"]);
+                $opp_url = sanitize_url($_POST["kcp_opp_url"]);
+                $opp_desc = sanitize_textarea_field($_POST["kcp_opp_desc"]);
+                $opp_deadline = sanitize_text_field($_POST["kcp_opp_deadline"]);
 
-            //Create post AS A DRAFT so admin can approve later
-            $postid = wp_insert_post( array("post_type"=>"kcp_service_opp",
-                                    "post_title" => $opp_name,
-                                    "post_status" => "draft",
-                                    "post_content" => $opp_desc)
-            );
-            if(!$postid){
-                return "Error. Please try again or contact the site administrator.";
+                //Create post AS A DRAFT so admin can approve later
+                $postid = wp_insert_post( array("post_type"=>"kcp_service_opp",
+                                        "post_title" => $opp_name,
+                                        "post_status" => "draft",
+                                        "post_content" => $opp_desc)
+                );
+                if(!$postid){
+                    return "Error. Please try again or contact the site administrator.";
+                }
+                //Add custom fields
+                add_post_meta($postid, "URL", $opp_url);
+                add_post_meta($postid, "Deadline", $opp_deadline);
             }
-            //Add custom fields
-            add_post_meta($postid, "URL", $opp_url);
-            add_post_meta($postid, "Deadline", $opp_deadline);
         }
 }
 
