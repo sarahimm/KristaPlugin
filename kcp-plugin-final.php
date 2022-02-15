@@ -238,6 +238,8 @@ function service_opps_form(){
                 //Add custom fields
                 add_post_meta($postid, "URL", $opp_url);
                 add_post_meta($postid, "Deadline", $opp_deadline);
+                
+                return "Service opportunity submitted. Thank you!";
             }
         }
 }
