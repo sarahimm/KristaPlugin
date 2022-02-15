@@ -176,9 +176,9 @@ function appform(){
                 add_post_meta($postid, "Experience", $experience);
                 add_post_meta($postid, "Challenge", $challenge);
                 wp_set_object_terms($postid, $univ, 'University');
-                ob_start();
+
                 echo "<h3 style='text-align: center;'>Your application has been submitted. Thank you!</h3>";
-                ob_get_clean();
+
             } 
         }
 }
@@ -240,9 +240,7 @@ function service_opps_form(){
                 add_post_meta($postid, "URL", $opp_url);
                 add_post_meta($postid, "Deadline", $opp_deadline);
                 
-                ob_start();
                 echo "<h3 style='text-align: center;'>Service opportunity submitted. Thank you!</h3>";
-                ob_get_clean();
             }
         }
 }
