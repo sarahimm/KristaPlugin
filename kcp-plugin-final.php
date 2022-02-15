@@ -125,47 +125,64 @@ function appform(){
             </form>";
             return $formhtml;
         }else{ //Form has been submitted
-            //Check nonce to protect against CSRF
-            if ( ! wp_verify_nonce( $_POST['verify'], 'kcp_grant_app' ) ) {
-                return "Submission could not be verified. Please try again.";
+            //reCAPTCHA verification adapted from https://codeforgeek.com/google-recaptcha-tutorial/
+            if(isset($_POST['g-recaptcha-response'])){
+                 $captcha=$_POST['g-recaptcha-response'];
             }
-            //Sanitize entries
-            $name = sanitize_text_field($_POST["kcp_name"]);
-            $email = sanitize_email($_POST["kcp_email"]);
-            $phone = sanitize_text_field($_POST["kcp_phone"]);
-            $address = sanitize_textarea_field($_POST["kcp_address"]);
-            $univ = sanitize_text_field($_POST["kcp_univ"]);
-            $agencies = sanitize_textarea_field($_POST["kcp_agencies"]);
-            $length = sanitize_textarea_field($_POST["kcp_length"]);
-            $where = sanitize_textarea_field($_POST["kcp_where"]);
-            $activities = sanitize_textarea_field($_POST["kcp_activities"]);
-            $why = sanitize_textarea_field($_POST["kcp_why"]);
-            $experience = sanitize_textarea_field($_POST["kcp_experience"]);
-            $challenge = sanitize_textarea_field($_POST["kcp_challenge"]);
-
-            //Create post
-            $postid = wp_insert_post( array("post_type"=>"kcp_application",
-                                    "post_title" => $name,
-                                    "post_status" => "publish",
-                                    "post_category" => array($univ))
-            );
-            if(!$postid){
-                return "Error. Please try again or contact the site administrator.";
+            if(!$captcha){
+                      echo 'Complete the reCAPTCHA and try again.';
             }
-            //Add custom fields
-            add_post_meta($postid, "University", $univ);
-            add_post_meta($postid, "Email", $email);
-            add_post_meta($postid, "Phone", $phone);
-            add_post_meta($postid, "Address", $address);
-            add_post_meta($postid, "Agencies", $agencies);
-            add_post_meta($postid, "Length", $length);
-            add_post_meta($postid, "Where", $where);
-            add_post_meta($postid, "Activities", $activities);
-            add_post_meta($postid, "Why", $why);
-            add_post_meta($postid, "Experience", $experience);
-            add_post_meta($postid, "Challenge", $challenge);
+            $secretKey = "6Ld1wnweAAAAABSn8ObK091P32qcNeXBMJV3myAz";
+            $ip = $_SERVER['REMOTE_ADDR'];
+            // post request to server
+            $url = 'https://www.google.com/recaptcha/api/siteverify?secret=' . urlencode($secretKey) .  '&response=' . urlencode($captcha);
+            $response = file_get_contents($url);
+            $responseKeys = json_decode($response,true);
+            // should return JSON with success as true
+            //If reCAPTCHA and nonce tests are both successful
+            if($responseKeys["success"] && wp_verify_nonce( $_POST['verify'], 'kcp_grant_app' )){
+                //Sanitize entries
+                $name = sanitize_text_field($_POST["kcp_name"]);
+                $email = sanitize_email($_POST["kcp_email"]);
+                $phone = sanitize_text_field($_POST["kcp_phone"]);
+                $address = sanitize_textarea_field($_POST["kcp_address"]);
+                $univ = sanitize_text_field($_POST["kcp_univ"]);
+                $agencies = sanitize_textarea_field($_POST["kcp_agencies"]);
+                $length = sanitize_textarea_field($_POST["kcp_length"]);
+                $where = sanitize_textarea_field($_POST["kcp_where"]);
+                $activities = sanitize_textarea_field($_POST["kcp_activities"]);
+                $why = sanitize_textarea_field($_POST["kcp_why"]);
+                $experience = sanitize_textarea_field($_POST["kcp_experience"]);
+                $challenge = sanitize_textarea_field($_POST["kcp_challenge"]);
 
-            return "Your application has been submitted. Thank you!";
+                //Create post
+                $postid = wp_insert_post( array("post_type"=>"kcp_application",
+                                        "post_title" => $name,
+                                        "post_status" => "publish",
+                                        "post_category" => array($univ)));
+                if(!$postid){
+                    return "Error. Please try again or contact the site administrator.";
+                }
+                //Add custom fields
+                add_post_meta($postid, "University", $univ);
+                add_post_meta($postid, "Email", $email);
+                add_post_meta($postid, "Phone", $phone);
+                add_post_meta($postid, "Address", $address);
+                add_post_meta($postid, "Agencies", $agencies);
+                add_post_meta($postid, "Length", $length);
+                add_post_meta($postid, "Where", $where);
+                add_post_meta($postid, "Activities", $activities);
+                add_post_meta($postid, "Why", $why);
+                add_post_meta($postid, "Experience", $experience);
+                add_post_meta($postid, "Challenge", $challenge);
+                wp_set_object_terms($postid, $univ, 'University');
+
+                return "Your application has been submitted. Thank you!";
+            } 
+            else {
+                //reCAPTCHA or nonce failed
+                    echo 'Submission could not be verified. Please try again.';
+            }  
         }
 }
 
